@@ -7,7 +7,7 @@ RUN apt-get update && \
       xfce4 xfce4-terminal \
       tigervnc-standalone-server tigervnc-common tigervnc-tools \
       dos2unix supervisor wget curl git sudo dbus-x11 \
-      build-essential vim bash-completion tzdata terminator && \
+      build-essential vim tmux bash-completion tzdata terminator && \
     rm -rf /var/lib/apt/lists/*
 
 # Python deps (gRPC + noVNC websockify + map downloader)
@@ -39,6 +39,8 @@ COPY start_vnc.sh /start_vnc.sh
 RUN chmod +x /entrypoint.sh /start_vnc.sh
 
 ENV AUTOWARE_MAP_DIR=/root/autoware_map
+# Launch ROS2 planning simulator (default: true). Set to false to run only gRPC (+ optional VNC).
+ENV LAUNCH_ROS2=true
 # Control RViz and VNC from env (defaults: no RViz, no VNC)
 ENV ENABLE_VNC=false
 ENV VNC_RESOLUTION=1920x1080
