@@ -204,9 +204,9 @@ def main():
     autoware_planning_pb2_grpc.add_AutowarePlanningServiceServicer_to_server(
         servicer, server
     )
-    server.add_insecure_port("0.0.0.0:50051")
+    server.add_insecure_port("0.0.0.0:50052")
     server.start()
-    node.get_logger().info("gRPC server listening on 0.0.0.0:50051")
+    node.get_logger().info("gRPC server listening on 0.0.0.0:50052")
 
     try:
         rclpy.spin(node)
