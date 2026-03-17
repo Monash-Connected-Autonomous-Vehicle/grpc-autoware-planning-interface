@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package autoware_planning;
+
+service AutowarePlanningService {
+  rpc SetDestination(SetDestinationRequest) returns (SetDestinationResponse);
+  rpc GoToDestination(GoToDestinationRequest) returns (GoToDestinationResponse);
+  rpc GetPathToDestination(GetPathRequest) returns (GetPathResponse);
+  rpc GetCurrentPose(GetCurrentPoseRequest) returns (GetCurrentPoseResponse);
+  rpc GetMapDownloadLink(GetMapDownloadLinkRequest) returns (GetMapDownloadLinkResponse);
+  rpc Reset(ResetRequest) returns (ResetResponse);
+}
+
+message Position {
+  double x = 1;
+  double y = 2;
+}
+
+message Pose {
+  double x = 1;
+  double y = 2;
+  double direction = 3;
+}
+
+message SetDestinationRequest {
+  Position position = 1;
+}
+
+message SetDestinationResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message GoToDestinationRequest {
+  optional Position position = 1;
+}
+
+message GoToDestinationResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message GetPathRequest {}
+
+message GetPathResponse {
+  repeated Position path = 1;
+}
+
+message GetCurrentPoseRequest {}
+
+message GetCurrentPoseResponse {
+  Pose pose = 1;
+}
+
+message GetMapDownloadLinkRequest {}
+
+message GetMapDownloadLinkResponse {
+  string osm_link = 1;
+  string pcd_link = 2;
+}
+
+message ResetRequest {
+  optional Position position = 1;
+}
+
+message ResetResponse {
+  bool success = 1;
+  string message = 2;
+}

@@ -24,8 +24,7 @@ fi
 # Source Autoware (needed for gRPC ROS 2 node)
 source /opt/autoware/setup.bash
 
-# Start gRPC ROS 2 node (always)
-python3 /app/example_server_node.py &
+python3 /app/server_node.py &
 GRPC_PID=$!
 
 # Optionally start planning simulator

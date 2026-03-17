@@ -22,16 +22,17 @@ RUN git clone https://github.com/AtsushiSaito/noVNC.git -b add_clipboard_support
 
 WORKDIR /app
 
-# gRPC proto + server
 COPY example.proto .
 COPY example_server_node.py .
+COPY autoware_planning.proto .
+COPY server_node.py .
 
-# Generate gRPC stubs at build time
 RUN python3 -m grpc_tools.protoc \
     -I. \
     --python_out=. \
     --grpc_python_out=. \
-    example.proto
+    example.proto \
+    autoware_planning.proto
 
 # Scripts
 COPY entrypoint.sh /entrypoint.sh
