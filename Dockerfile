@@ -22,17 +22,21 @@ RUN git clone https://github.com/AtsushiSaito/noVNC.git -b add_clipboard_support
 
 WORKDIR /app
 
-# gRPC proto + server
+COPY example.proto .
+COPY example_server_node.py .
 COPY planning.proto .
 COPY planning_server_node.py .
 COPY lanelet_sampling.py .
+COPY autoware_planning.proto .
+COPY server_node.py .
 
-# Generate gRPC stubs at build time
 RUN python3 -m grpc_tools.protoc \
     -I. \
     --python_out=. \
     --grpc_python_out=. \
-    planning.proto
+    example.proto \
+    planning.proto \
+    autoware_planning.proto
 
 # Scripts
 COPY entrypoint.sh /entrypoint.sh
@@ -47,6 +51,6 @@ ENV ENABLE_VNC=false
 ENV VNC_RESOLUTION=1920x1080
 
 # Only gRPC is exposed by default; VNC ports are opt-in via docker -p
-EXPOSE 50051
+EXPOSE 50051 50052
 
 ENTRYPOINT ["/entrypoint.sh"]
