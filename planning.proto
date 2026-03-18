@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package planning;
+
+service PlanningService {
+  rpc SetInitialPose (SetInitialPoseRequest) returns (PoseReply);
+  rpc SetGoalPosition (SetGoalPositionRequest) returns (PoseReply);
+}
+
+message SetInitialPoseRequest {
+  optional double x = 1;  // if not provided, use default position
+  optional double y = 2;
+}
+
+message SetGoalPositionRequest {
+  optional double x = 1;  // if not provided, use default goal position
+  optional double y = 2;
+}
+
+message PoseReply {
+  bool success = 1;
+  double x = 2;
+  double y = 3;
+  double yaw = 4;
+  string message = 5;
+}

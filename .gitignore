@@ -1,0 +1,23 @@
+# Generated gRPC stubs (regenerated at Docker build)
+*_pb2.py
+*_pb2_grpc.py
+
+# Byte-compiled
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
