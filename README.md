@@ -21,6 +21,16 @@ docker run --rm -it --net=host \
   -e DISPLAY=:1 \
   autoware-planning-grpc
 ```
+Running with VNC(on Windows)
+```bash
+docker run --rm -it \
+  -p 6080:6080 \
+  -p 50051:50051 \
+  -e ENABLE_VNC=true \
+  -e VNC_RESOLUTION=1920x1080 \
+  -e DISPLAY=:1 \
+  autoware-planning-grpc
+```
 - vnc password = `password`
 
 **Note**: the `--rm` flag removes the docker container and all it's saved data after it closes. It is recommended that you update code on your host machine then run a new container each time.
