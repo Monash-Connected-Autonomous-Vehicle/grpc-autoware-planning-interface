@@ -2,6 +2,7 @@
 
 ### Build Docker Image
 - Install Docker CLI
+- After cloning this repository, go to the root of the repository and run:
 ```bash
 docker build -t autoware-planning-grpc .
 ```
