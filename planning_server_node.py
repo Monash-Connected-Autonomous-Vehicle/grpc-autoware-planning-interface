@@ -6,6 +6,7 @@ import grpc
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import PoseWithCovarianceStamped, PoseStamped
+from autoware_adapi_v1_msgs.msg import LocalizationInitializationState
 
 import planning_pb2
 import planning_pb2_grpc
@@ -27,6 +28,9 @@ class PlanningServiceServicer(planning_pb2_grpc.PlanningServiceServicer):
         self.goal_pub = self.node.create_publisher(
             PoseStamped, "/planning/mission_planning/goal", 10
         )
+        self.pose_initialize_status = planning_pb2.PoseInitializeStatus.UNINITIALIZED
+        self.local_initial_status_sub = self.node.create_subscription(
+            LocalizationInitializationState, "/localization/initialization_state", self._initial_pose_received, 10)
         map_root = Path(
             self.node.declare_parameter(
                 "autoware_map_dir",
@@ -41,12 +45,22 @@ class PlanningServiceServicer(planning_pb2_grpc.PlanningServiceServicer):
         osm_path = map_dir / "lanelet2_map.osm"
         self.map = LaneletMap(osm_path)
 
+    def _initial_pose_received(self, msg: LocalizationInitializationState):
+        if msg.state == LocalizationInitializationState.UNINITIALIZED:
+            self.pose_initialize_status = planning_pb2.PoseInitializeStatus.UNINITIALIZED
+        elif msg.state == LocalizationInitializationState.INITIALIZING:
+            self.pose_initialize_status = planning_pb2.PoseInitializeStatus.INITIALIZING
+        elif msg.state == LocalizationInitializationState.INITIALIZED:
+            self.pose_initialize_status = planning_pb2.PoseInitializeStatus.INITIALIZED
+        else:
+            self.pose_initialize_status = planning_pb2.PoseInitializeStatus.UNINITIALIZED
+        pass
+
     def SetInitialPose(self, request, context):
         if request.HasField("x") and request.HasField("y"):
             x, y = request.x, request.y
         else:
             x, y = DEFAULT_INITIAL_X, DEFAULT_INITIAL_Y
-
         nearest = self.map.nearest_valid_position(x, y)
         if nearest is None:
             message = f"No lanelet point found near x={x}, y={y}"
@@ -108,6 +122,8 @@ class PlanningServiceServicer(planning_pb2_grpc.PlanningServiceServicer):
             message="Set goal position to nearest lanelet centerline point",
         )
 
+    def GetPoseInitializeStatus(self, request, context):
+        return planning_pb2.PoseInitializeStatusReply(status=self.pose_initialize_status)
 
 def start_grpc_server(ros_node: Node, address: str = "0.0.0.0:50051"):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))

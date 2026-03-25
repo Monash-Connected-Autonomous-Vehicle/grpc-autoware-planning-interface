@@ -5,6 +5,7 @@ package planning;
 service PlanningService {
   rpc SetInitialPose (SetInitialPoseRequest) returns (PoseReply);
   rpc SetGoalPosition (SetGoalPositionRequest) returns (PoseReply);
+  rpc GetPoseInitializeStatus (GetPoseInitializeStatusRequest) returns (PoseInitializeStatusReply);
 }
 
 message SetInitialPoseRequest {
@@ -23,4 +24,21 @@ message PoseReply {
   double y = 3;
   double yaw = 4;
   string message = 5;
+}
+
+message GetPoseInitializeStatusRequest
+{
+
+}
+
+message PoseInitializeStatusReply
+{
+  PoseInitializeStatus status = 1;
+}
+
+enum PoseInitializeStatus
+{
+  UNINITIALIZED = 0;
+  INITIALIZING = 1;
+  INITIALIZED = 2;
 }
