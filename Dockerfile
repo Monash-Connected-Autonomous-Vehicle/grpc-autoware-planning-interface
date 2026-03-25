@@ -10,7 +10,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 RUN pip3 install --no-cache-dir \
-      grpcio grpcio-tools \
+      grpcio grpcio-tools grpcio-reflection \
       git+https://github.com/novnc/websockify.git@v0.10.0 \
       gdown
 

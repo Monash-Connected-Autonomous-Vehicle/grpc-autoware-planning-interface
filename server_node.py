@@ -3,6 +3,7 @@ import threading
 from concurrent import futures
 
 import grpc
+from grpc_reflection.v1alpha import reflection
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy
@@ -204,6 +205,11 @@ def main():
     planning_pb2_grpc.add_AutowarePlanningServiceServicer_to_server(
         servicer, server
     )
+    SERVICE_NAMES = (
+        planning_pb2.DESCRIPTOR.services_by_name['AutowarePlanningService'].full_name,
+        reflection.SERVICE_NAME,
+    )
+    reflection.enable_server_reflection(SERVICE_NAMES, server)
     server.add_insecure_port("0.0.0.0:50052")
     server.start()
     node.get_logger().info("gRPC server listening on 0.0.0.0:50052")

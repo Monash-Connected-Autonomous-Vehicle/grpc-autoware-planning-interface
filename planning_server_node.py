@@ -3,6 +3,7 @@ from concurrent import futures
 from pathlib import Path
 
 import grpc
+from grpc_reflection.v1alpha import reflection
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import PoseWithCovarianceStamped, PoseStamped
@@ -114,6 +115,11 @@ def start_grpc_server(ros_node: Node, address: str = "0.0.0.0:50051"):
     planning_pb2_grpc.add_PlanningServiceServicer_to_server(
         PlanningServiceServicer(ros_node), server
     )
+    SERVICE_NAMES = (
+        planning_pb2.DESCRIPTOR.services_by_name['PlanningService'].full_name,
+        reflection.SERVICE_NAME,
+    )
+    reflection.enable_server_reflection(SERVICE_NAMES, server)
     server.add_insecure_port(address)
     server.start()
     ros_node.get_logger().info(f"gRPC server listening on {address}")
