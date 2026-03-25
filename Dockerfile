@@ -21,6 +21,7 @@ WORKDIR /app
 
 COPY planning.proto .
 COPY lanelet_sampling.py .
+COPY planning_server_node.py .
 COPY server_node.py .
 
 RUN python3 -m grpc_tools.protoc \
@@ -38,6 +39,6 @@ ENV LAUNCH_ROS2=true
 ENV ENABLE_VNC=false
 ENV VNC_RESOLUTION=1920x1080
 
-EXPOSE 50052
+EXPOSE 50051 50052
 
 ENTRYPOINT ["/entrypoint.sh"]
