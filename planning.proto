@@ -6,6 +6,10 @@ service PlanningService {
   rpc SetInitialPose(SetInitialPoseRequest) returns (PoseReply);
   rpc SetGoalPosition(SetGoalPositionRequest) returns (PoseReply);
   rpc GetMapDownloadLink(GetMapDownloadLinkRequest) returns (GetMapDownloadLinkResponse);
+  rpc GoToDestination(GoToDestinationRequest) returns (GoToDestinationResponse);
+  rpc GetPathToDestination(GetPathRequest) returns (GetPathResponse);
+  rpc GetCurrentPose(GetCurrentPoseRequest) returns (GetCurrentPoseResponse);
+  rpc Reset(ResetRequest) returns (ResetResponse);
 }
 
 message SetInitialPoseRequest {
@@ -31,4 +35,37 @@ message GetMapDownloadLinkRequest {}
 message GetMapDownloadLinkResponse {
   string osm_link = 1;
   string pcd_link = 2;
+}
+
+message GoToDestinationRequest {}
+
+message GoToDestinationResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message GetPathRequest {}
+
+message GetPathResponse {
+  repeated Position path = 1;
+}
+
+message Position {
+  double x = 1;
+  double y = 2;
+}
+
+message GetCurrentPoseRequest {}
+
+message GetCurrentPoseResponse {
+  double x = 1;
+  double y = 2;
+  double direction = 3;
+}
+
+message ResetRequest {}
+
+message ResetResponse {
+  bool success = 1;
+  string message = 2;
 }

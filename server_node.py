@@ -1,3 +1,4 @@
+import math
 import threading
 from concurrent import futures
 from pathlib import Path
@@ -6,7 +7,12 @@ import grpc
 from grpc_reflection.v1alpha import reflection
 import rclpy
 from rclpy.node import Node
-from geometry_msgs.msg import PoseWithCovarianceStamped, PoseStamped
+from rclpy.qos import QoSProfile, ReliabilityPolicy
+
+from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
+from nav_msgs.msg import Odometry
+from autoware_vehicle_msgs.msg import Engage
+from autoware_planning_msgs.msg import Trajectory
 
 import planning_pb2
 import planning_pb2_grpc
@@ -23,16 +29,31 @@ MAP_DOWNLOAD_LINK = (
     "&id=1499_nsbUbIeturZaDj7jhUownh5fvXHd"
 )
 
+BEST_EFFORT_QOS = QoSProfile(depth=10, reliability=ReliabilityPolicy.BEST_EFFORT)
+
+
+def yaw_to_quaternion(yaw):
+    return (0.0, 0.0, math.sin(yaw / 2.0), math.cos(yaw / 2.0))
+
 
 class PlanningServiceServicer(planning_pb2_grpc.PlanningServiceServicer):
     def __init__(self, ros_node: Node):
         self.node = ros_node
-        self.initial_pose_pub = self.node.create_publisher(
+        self._lock = threading.Lock()
+        self._current_pose = None
+        self._current_trajectory = None
+        self._engage = False
+
+        self._initial_pose_pub = self.node.create_publisher(
             PoseWithCovarianceStamped, "/initialpose", 10
         )
-        self.goal_pub = self.node.create_publisher(
+        self._goal_pub = self.node.create_publisher(
             PoseStamped, "/planning/mission_planning/goal", 10
         )
+        self._engage_pub = self.node.create_publisher(
+            Engage, "/autoware/engage", 10
+        )
+
         map_root = Path(
             self.node.declare_parameter(
                 "autoware_map_dir",
@@ -46,6 +67,30 @@ class PlanningServiceServicer(planning_pb2_grpc.PlanningServiceServicer):
                 map_dir = fallback_dir
         osm_path = map_dir / "lanelet2_map.osm"
         self.map = LaneletMap(osm_path)
+
+        ros_node.create_subscription(
+            Odometry,
+            "/localization/kinematic_state",
+            self._on_kinematic_state,
+            BEST_EFFORT_QOS,
+        )
+        ros_node.create_subscription(
+            Trajectory,
+            "/planning/scenario_planning/trajectory",
+            self._on_trajectory,
+            BEST_EFFORT_QOS,
+        )
+
+    def _on_kinematic_state(self, msg: Odometry):
+        pos = msg.pose.pose.position
+        yaw = quaternion_to_yaw(msg.pose.pose.orientation)
+        with self._lock:
+            self._current_pose = (pos.x, pos.y, yaw)
+
+    def _on_trajectory(self, msg: Trajectory):
+        points = [(p.pose.position.x, p.pose.position.y) for p in msg.points]
+        with self._lock:
+            self._current_trajectory = points
 
     def SetInitialPose(self, request, context):
         if request.HasField("x") and request.HasField("y"):
@@ -71,7 +116,7 @@ class PlanningServiceServicer(planning_pb2_grpc.PlanningServiceServicer):
         pose_msg.pose.pose.orientation.z = qz
         pose_msg.pose.pose.orientation.w = qw
         pose_msg.pose.covariance = [0.0] * 36
-        self.initial_pose_pub.publish(pose_msg)
+        self._initial_pose_pub.publish(pose_msg)
 
         return planning_pb2.PoseReply(
             success=True,
@@ -104,7 +149,7 @@ class PlanningServiceServicer(planning_pb2_grpc.PlanningServiceServicer):
         pose_msg.pose.orientation.y = qy
         pose_msg.pose.orientation.z = qz
         pose_msg.pose.orientation.w = qw
-        self.goal_pub.publish(pose_msg)
+        self._goal_pub.publish(pose_msg)
 
         return planning_pb2.PoseReply(
             success=True,
@@ -120,6 +165,58 @@ class PlanningServiceServicer(planning_pb2_grpc.PlanningServiceServicer):
             osm_link=MAP_DOWNLOAD_LINK,
             pcd_link=MAP_DOWNLOAD_LINK,
         )
+
+    def GoToDestination(self, request, context):
+        self.node.get_logger().info("GoToDestination: engaging")
+        self._engage = True
+        engage_msg = Engage()
+        engage_msg.engage = True
+        self._engage_pub.publish(engage_msg)
+        return planning_pb2.GoToDestinationResponse(
+            success=True, message="Engaged autonomous driving"
+        )
+
+    def GetPathToDestination(self, request, context):
+        with self._lock:
+            trajectory = self._current_trajectory
+        self.node.get_logger().info(
+            f"GetPathToDestination: {len(trajectory) if trajectory else 0} points"
+        )
+        resp = planning_pb2.GetPathResponse()
+        if trajectory:
+            for x, y in trajectory:
+                resp.path.append(planning_pb2.Position(x=x, y=y))
+        return resp
+
+    def GetCurrentPose(self, request, context):
+        with self._lock:
+            pose = self._current_pose
+        if pose:
+            x, y, direction = pose
+            return planning_pb2.GetCurrentPoseResponse(x=x, y=y, direction=direction)
+        return planning_pb2.GetCurrentPoseResponse(x=0.0, y=0.0, direction=0.0)
+
+    def Reset(self, request, context):
+        self.node.get_logger().info("Reset")
+        pose_msg = PoseWithCovarianceStamped()
+        pose_msg.header.frame_id = "map"
+        pose_msg.header.stamp = self.node.get_clock().now().to_msg()
+        pose_msg.pose.pose.position.x = 0.0
+        pose_msg.pose.pose.position.y = 0.0
+        pose_msg.pose.pose.position.z = 0.0
+        pose_msg.pose.pose.orientation.w = 1.0
+        pose_msg.pose.covariance = [0.0] * 36
+        self._initial_pose_pub.publish(pose_msg)
+        self._engage = False
+        engage_msg = Engage()
+        engage_msg.engage = False
+        self._engage_pub.publish(engage_msg)
+        return planning_pb2.ResetResponse(success=True, message="Reset completed")
+
+
+def quaternion_to_yaw(orientation):
+    x, y, z, w = orientation.x, orientation.y, orientation.z, orientation.w
+    return math.atan2(2.0 * (w * z + x * y), 1.0 - 2.0 * (y * y + z * z))
 
 
 def main():
