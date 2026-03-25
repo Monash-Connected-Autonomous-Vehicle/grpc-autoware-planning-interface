@@ -12,8 +12,8 @@ from nav_msgs.msg import Odometry
 from autoware_vehicle_msgs.msg import Engage
 from autoware_planning_msgs.msg import Trajectory
 
-import autoware_planning_pb2
-import autoware_planning_pb2_grpc
+import planning_pb2
+import planning_pb2_grpc
 
 MAP_DOWNLOAD_LINK = (
     "https://drive.google.com/uc?export=download"
@@ -32,7 +32,7 @@ def yaw_to_quaternion(yaw):
     return (0.0, 0.0, math.sin(yaw / 2.0), math.cos(yaw / 2.0))
 
 
-class AutowarePlanningServicer(autoware_planning_pb2_grpc.AutowarePlanningServiceServicer):
+class AutowarePlanningServicer(planning_pb2_grpc.AutowarePlanningServiceServicer):
     def __init__(self, ros_node: Node):
         self.node = ros_node
         self._lock = threading.Lock()
@@ -98,7 +98,7 @@ class AutowarePlanningServicer(autoware_planning_pb2_grpc.AutowarePlanningServic
 
         self._publish_goal(x, y)
 
-        return autoware_planning_pb2.SetDestinationResponse(
+        return planning_pb2.SetDestinationResponse(
             success=True, message=f"Destination set to ({x}, {y})"
         )
 
@@ -114,7 +114,7 @@ class AutowarePlanningServicer(autoware_planning_pb2_grpc.AutowarePlanningServic
                 dest = self._destination
             if dest is None:
                 self.node.get_logger().warn("GoToDestination: no destination set")
-                return autoware_planning_pb2.GoToDestinationResponse(
+                return planning_pb2.GoToDestinationResponse(
                     success=False, message="No destination set. Call SetDestination first."
                 )
             self.node.get_logger().info(
@@ -123,7 +123,7 @@ class AutowarePlanningServicer(autoware_planning_pb2_grpc.AutowarePlanningServic
 
         self._publish_engage(True)
 
-        return autoware_planning_pb2.GoToDestinationResponse(
+        return planning_pb2.GoToDestinationResponse(
             success=True, message="Engaged autonomous driving"
         )
 
@@ -135,10 +135,10 @@ class AutowarePlanningServicer(autoware_planning_pb2_grpc.AutowarePlanningServic
             f"GetPathToDestination: {len(trajectory) if trajectory else 0} points"
         )
 
-        resp = autoware_planning_pb2.GetPathResponse()
+        resp = planning_pb2.GetPathResponse()
         if trajectory:
             for x, y in trajectory:
-                resp.path.append(autoware_planning_pb2.Position(x=x, y=y))
+                resp.path.append(planning_pb2.Position(x=x, y=y))
         return resp
 
     def GetCurrentPose(self, request, context):
@@ -150,18 +150,18 @@ class AutowarePlanningServicer(autoware_planning_pb2_grpc.AutowarePlanningServic
             self.node.get_logger().info(
                 f"GetCurrentPose: x={x:.2f}, y={y:.2f}, yaw={direction:.2f}"
             )
-            return autoware_planning_pb2.GetCurrentPoseResponse(
-                pose=autoware_planning_pb2.Pose(x=x, y=y, direction=direction)
+            return planning_pb2.GetCurrentPoseResponse(
+                pose=planning_pb2.Pose(x=x, y=y, direction=direction)
             )
 
         self.node.get_logger().info("GetCurrentPose: no pose received yet")
-        return autoware_planning_pb2.GetCurrentPoseResponse(
-            pose=autoware_planning_pb2.Pose(x=0.0, y=0.0, direction=0.0)
+        return planning_pb2.GetCurrentPoseResponse(
+            pose=planning_pb2.Pose(x=0.0, y=0.0, direction=0.0)
         )
 
     def GetMapDownloadLink(self, request, context):
         self.node.get_logger().info("GetMapDownloadLink")
-        return autoware_planning_pb2.GetMapDownloadLinkResponse(
+        return planning_pb2.GetMapDownloadLinkResponse(
             osm_link=MAP_DOWNLOAD_LINK,
             pcd_link=MAP_DOWNLOAD_LINK,
         )
@@ -189,7 +189,7 @@ class AutowarePlanningServicer(autoware_planning_pb2_grpc.AutowarePlanningServic
         with self._lock:
             self._destination = None
 
-        return autoware_planning_pb2.ResetResponse(
+        return planning_pb2.ResetResponse(
             success=True, message=f"Reset to ({x}, {y})"
         )
 
@@ -201,7 +201,7 @@ def main():
     servicer = AutowarePlanningServicer(node)
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    autoware_planning_pb2_grpc.add_AutowarePlanningServiceServicer_to_server(
+    planning_pb2_grpc.add_AutowarePlanningServiceServicer_to_server(
         servicer, server
     )
     server.add_insecure_port("0.0.0.0:50052")
