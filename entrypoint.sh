@@ -19,7 +19,6 @@ fi
 
 source /opt/autoware/setup.bash
 
-python3 /app/planning_server_node.py &
 python3 /app/server_node.py &
 GRPC_PID=$!
 
