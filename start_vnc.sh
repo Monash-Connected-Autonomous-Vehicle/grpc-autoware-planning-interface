@@ -3,7 +3,6 @@ set -e
 
 mkdir -p /root/.vnc
 if [ ! -f /root/.vnc/passwd ]; then
-  # Default password "password" for dev; override by mounting your own passwd file if needed
   echo "password" | vncpasswd -f > /root/.vnc/passwd
   chmod 600 /root/.vnc/passwd
 fi

@@ -196,24 +196,6 @@ class PlanningServiceServicer(planning_pb2_grpc.PlanningServiceServicer):
             return planning_pb2.GetCurrentPoseResponse(x=x, y=y, direction=direction)
         return planning_pb2.GetCurrentPoseResponse(x=0.0, y=0.0, direction=0.0)
 
-    def Reset(self, request, context):
-        self.node.get_logger().info("Reset")
-        pose_msg = PoseWithCovarianceStamped()
-        pose_msg.header.frame_id = "map"
-        pose_msg.header.stamp = self.node.get_clock().now().to_msg()
-        pose_msg.pose.pose.position.x = 0.0
-        pose_msg.pose.pose.position.y = 0.0
-        pose_msg.pose.pose.position.z = 0.0
-        pose_msg.pose.pose.orientation.w = 1.0
-        pose_msg.pose.covariance = [0.0] * 36
-        self._initial_pose_pub.publish(pose_msg)
-        self._engage = False
-        engage_msg = Engage()
-        engage_msg.engage = False
-        self._engage_pub.publish(engage_msg)
-        return planning_pb2.ResetResponse(success=True, message="Reset completed")
-
-
 def quaternion_to_yaw(orientation):
     x, y, z, w = orientation.x, orientation.y, orientation.z, orientation.w
     return math.atan2(2.0 * (w * z + x * y), 1.0 - 2.0 * (y * y + z * z))

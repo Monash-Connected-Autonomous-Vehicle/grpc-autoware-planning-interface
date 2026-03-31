@@ -9,7 +9,6 @@ service PlanningService {
   rpc GoToDestination(GoToDestinationRequest) returns (GoToDestinationResponse);
   rpc GetPathToDestination(GetPathRequest) returns (GetPathResponse);
   rpc GetCurrentPose(GetCurrentPoseRequest) returns (GetCurrentPoseResponse);
-  rpc Reset(ResetRequest) returns (ResetResponse);
 }
 
 message SetInitialPoseRequest {
@@ -61,11 +60,4 @@ message GetCurrentPoseResponse {
   double x = 1;
   double y = 2;
   double direction = 3;
-}
-
-message ResetRequest {}
-
-message ResetResponse {
-  bool success = 1;
-  string message = 2;
 }

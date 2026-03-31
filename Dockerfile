@@ -34,10 +34,15 @@ COPY start_vnc.sh /start_vnc.sh
 RUN chmod +x /entrypoint.sh /start_vnc.sh
 
 ENV AUTOWARE_MAP_DIR=/root/autoware_map
-ENV LAUNCH_ROS2=true
 ENV ENABLE_VNC=false
 ENV VNC_RESOLUTION=1920x1080
+ENV PATH="${PATH}:/root/.local/bin"
+ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+ENV CMAKE_PREFIX_PATH="/opt/acados:${CMAKE_PREFIX_PATH}"
+ENV ACADOS_SOURCE_DIR=/opt/acados
+ENV LD_LIBRARY_PATH="/opt/acados/lib:${LD_LIBRARY_PATH}"
 
 EXPOSE 50051
 
 ENTRYPOINT ["/entrypoint.sh"]
+CMD []
