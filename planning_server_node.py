@@ -7,6 +7,7 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import PoseWithCovarianceStamped, PoseStamped
 from autoware_adapi_v1_msgs.msg import LocalizationInitializationState
+from autoware_planning_msgs.msg import RouteState
 
 import planning_pb2
 import planning_pb2_grpc
@@ -31,6 +32,9 @@ class PlanningServiceServicer(planning_pb2_grpc.PlanningServiceServicer):
         self.pose_initialize_status = planning_pb2.PoseInitializeStatus.UNINITIALIZED
         self.local_initial_status_sub = self.node.create_subscription(
             LocalizationInitializationState, "/localization/initialization_state", self._initial_pose_received, 10)
+        self.routing_status = RouteState.UNKNOWN
+        self.routing_status_sub = self.node.create_subscription(
+            RouteState, "/planning/route_state", self._routing_status_received, 10)
         map_root = Path(
             self.node.declare_parameter(
                 "autoware_map_dir",
@@ -54,6 +58,10 @@ class PlanningServiceServicer(planning_pb2_grpc.PlanningServiceServicer):
             self.pose_initialize_status = planning_pb2.PoseInitializeStatus.INITIALIZED
         else:
             self.pose_initialize_status = planning_pb2.PoseInitializeStatus.UNINITIALIZED
+        pass
+    
+    def _routing_status_received(self, msg: RouteState):
+        self.routing_status = msg.state
         pass
 
     def SetInitialPose(self, request, context):
@@ -124,6 +132,8 @@ class PlanningServiceServicer(planning_pb2_grpc.PlanningServiceServicer):
 
     def GetPoseInitializeStatus(self, request, context):
         return planning_pb2.PoseInitializeStatusReply(status=self.pose_initialize_status)
+    def GetRoutingStatus(self, request, context):
+        return planning_pb2.PoseInitializeStatusReply(status=self.routing_status)
 
 def start_grpc_server(ros_node: Node, address: str = "0.0.0.0:50051"):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))

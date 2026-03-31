@@ -6,6 +6,7 @@ service PlanningService {
   rpc SetInitialPose (SetInitialPoseRequest) returns (PoseReply);
   rpc SetGoalPosition (SetGoalPositionRequest) returns (PoseReply);
   rpc GetPoseInitializeStatus (GetPoseInitializeStatusRequest) returns (PoseInitializeStatusReply);
+  rpc GetRoutingStatus (GetRoutingStatusRequest) returns (RoutingStatusReply);
 }
 
 message SetInitialPoseRequest {
@@ -41,4 +42,25 @@ enum PoseInitializeStatus
   UNINITIALIZED = 0;
   INITIALIZING = 1;
   INITIALIZED = 2;
+}
+
+message GetRoutingStatusRequest
+{
+
+}
+
+message RoutingStatusReply
+{
+  RoutingStatus status = 1;
+}
+
+enum RoutingStatus
+{
+  ROUTING_UNKNOWN = 0;
+  UNSET = 1;
+  WAITING_FOR_ROUTE = 2;
+  SETTING_ROUTE = 3;
+  ROUTED = 4;
+  ARRIVED = 5;
+  ABORTED = 6;
 }
